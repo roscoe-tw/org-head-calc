@@ -1,0 +1,6 @@
+public/*
+*.org~
+*.html~
+org/*.html
+*.org_archive~
+.gitignore~
