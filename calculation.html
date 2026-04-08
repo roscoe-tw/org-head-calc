@@ -30,12 +30,12 @@
 <div class="reveal">
 <div class="slides">
 <section id="sec-title-slide"><h1 class="title">碟形端板厚度計算 (ASME Sec. VIII Div.1)</h1><p class="subtitle"></p>
-<h2 class="author">Each Application Mechanical Design Studio</h2><p class="date">Created: 2026-04-08 Wed 09:37</p>
+<h2 class="author">Each Application Mechanical Design Studio</h2><p class="date">Created: 2026-04-08 Wed 09:47</p>
 </section>
 
 <section>
-<section id="slide-org9d2d9f6">
-<h2 id="org9d2d9f6">專案簡介</h2>
+<section id="slide-org55c566e">
+<h2 id="org55c566e">專案簡介</h2>
 <p>
 本文件採用 <b><b>Docs-as-Code</b></b> 工作流，整合以下技術：
 </p>
@@ -49,13 +49,13 @@
 </section>
 </section>
 <section>
-<section id="slide-org4ca8221">
-<h2 id="org4ca8221">設計參數輸入</h2>
+<section id="slide-org914c51c">
+<h2 id="org914c51c">設計參數輸入</h2>
 <p>
 這裡是計算的核心輸入區。修改表格數值後，下方的計算塊會自動同步。
 </p>
 
-<table id="orgbc1e5d0" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<table id="org2c2d64f" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
 <colgroup>
@@ -123,13 +123,13 @@
 </section>
 </section>
 <section>
-<section id="slide-orgcdbf89b">
-<h2 id="orgcdbf89b">厚度計算流程</h2>
-<div class="outline-text-2" id="text-orgcdbf89b">
+<section id="slide-orgecdb69a">
+<h2 id="orgecdb69a">厚度計算流程</h2>
+<div class="outline-text-2" id="text-orgecdb69a">
 </div>
 </section>
-<section id="slide-orge33e6f8">
-<h3 id="orge33e6f8">係數 M 之計算</h3>
+<section id="slide-org8312997">
+<h3 id="org8312997">係數 M 之計算</h3>
 <p>
 根據 ASME Section VIII, Div. 1, Appendix 1-4：
 \[ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right) \]
@@ -196,8 +196,8 @@ print("計算結果 M =", float(M_val));
 </table>
 
 </section>
-<section id="slide-org0f5b311">
-<h3 id="org0f5b311">最小需求厚度 (t)</h3>
+<section id="slide-orgab3d72f">
+<h3 id="orgab3d72f">最小需求厚度 (t)</h3>
 <p>
 公式如下：
 \[ t = \frac{P \cdot L \cdot M}{2SE - 0.2P} \]
@@ -269,8 +269,8 @@ print("需求厚度 t_req =", float(t_req), "mm");
 </section>
 </section>
 <section>
-<section id="slide-orge94858a">
-<h2 id="orge94858a">工程判斷 (Engineering Judgment)</h2>
+<section id="slide-org7793ecb">
+<h2 id="org7793ecb">工程判斷 (Engineering Judgment)</h2>
 <blockquote >
 <p>
 根據計算結果 \(t \approx 8.7 \, mm\)，考量腐蝕裕度 (C.A. = 2.0 mm)，建議選用公稱厚度 <b><b>12 mm</b></b> 之鋼板。
@@ -280,8 +280,8 @@ print("需求厚度 t_req =", float(t_req), "mm");
 </section>
 </section>
 <section>
-<section id="slide-orgbfa30a9">
-<h2 id="orgbfa30a9">結論</h2>
+<section id="slide-org661e367">
+<h2 id="org661e367">結論</h2>
 <ul>
 <li>計算符合 <b><b>ASME 2025</b></b> 最新標準規範。</li>
 <li>透過 CI/CD 自動化發佈，確保設計與計算的一致性。</li>
