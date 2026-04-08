@@ -1,0 +1,36 @@
+name: Publish HTML Slides
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Emacs & Maxima
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y emacs-nox maxima
+
+      - name: Generate HTML Slides
+        run: |
+          # 建立配置資料夾
+          mkdir -p ~/.emacs.d
+          # 使用 publish.el 配置執行匯出
+          emacs --batch -l publish.el input.org -f org-reveal-export-to-html
+
+      # (選用) 如果您想離線使用 reveal.js，需要將其下載到發佈目錄
+      - name: Setup Reveal.js
+        run: |
+          git clone https://github.com/hakimel/reveal.js.git
+
+      - name: Deploy to GitHub Pages
+         # 這個 action 會自動將特定資料夾推送到 gh-pages 分支
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./ # 設定 HTML 檔案所在的目錄

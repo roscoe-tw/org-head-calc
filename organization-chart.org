@@ -1,0 +1,40 @@
+* 專案組織圖
+** acsii 組織圖
+#+begin_src emacs-lisp :export results :results text
+  ;; 您的專案名稱/
+  ;; ├── .github/
+  ;; │   └── workflows/
+  ;; │       └── publish.yml      <-- 這裡就是放 CI/CD 設定的地方
+  ;; ├── .gitignore
+  ;; ├── publish.el               <-- 供 CI 環境使用的 Emacs 初始化腳本
+  ;; ├── calculation.org          <-- 您的主要 Org 計算文件
+  ;; ├── README.md
+  ;; └── reveal.js/               <-- (選用) 如果您選擇將 Reveal.js 庫放在本地
+
+  (require 'ascii-tree-rendr-root)
+
+  (setq *org-head-calc*
+        '("org-head-calc/"
+  	(".github/"
+  	 ("workflows/"
+  	  "publish.yml"))
+  	".gitignore"
+  	"publish.el"
+  	"calculation.org"
+  	"README.md"
+  	("reveal.js/")  ;;<-- (選用) 如果您選擇將 Reveal.js 庫放在本地
+  	))
+
+  (ascii-tree-render-root *org-head-calc*)
+#+end_src
+
+#+RESULTS:
+: org-head-calc/
+: ├─ .github/
+: │  └─ workflows/
+: │     └─ publish.yml
+: ├─ .gitignore
+: ├─ publish.el
+: ├─ calculation.org
+: ├─ README.md
+: └─ reveal.js/

@@ -1,0 +1,48 @@
+;;; publish.el --- GitHub Actions 的 Org-mode 匯出設定腳本
+
+;; 1. 初始化套件管理系統 (ELPA/MELPA)
+(require 'package)
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("gnu"   . "https://elpa.gnu.org/packages/")
+                         ("nongnu". "https://elpa.nongnu.org/nongnu/")))
+
+;; 設定套件安裝路徑（避免污染系統目錄）
+(setq package-user-dir (expand-file-name "./.elpa" default-directory))
+(package-initialize)
+
+;; 2. 自動更新與安裝必要套件
+(setq to-be-installed '(ox-reveal yaml-mode htmlize))
+
+(unless package-archive-contents
+  (package-refresh-contents))
+
+(dolist (pkg to-be-installed)
+  (unless (package-installed-p pkg)
+    (package-install pkg)))
+
+;; 3. 載入必要的模組
+(require 'org)
+(require 'ox-reveal)
+(require 'ob-maxima)
+
+;; 4. 配置 Org-babel 執行環境
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((maxima . t)   ; 啟動 Maxima 支援
+   (emacs-lisp . t)))
+
+;; 關閉代碼執行前的確認詢問 (CI 環境必須設定)
+(setq org-confirm-babel-evaluate nil)
+
+;; 5. Reveal.js 相關設定
+;; 如果你在 calculation.org 沒有設定路徑，可以在這裡統一設定 CDN
+(setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js")
+(setq org-reveal-mathjax t) ; 啟用 MathJax 支援公式渲染
+
+;; 6. 強制執行編譯並顯示進度 (供 CI Log 查閱)
+(message "開始編譯 calculation.org...")
+
+;; 註：此腳本在 GitHub Action 中透過以下指令呼叫：
+;; emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html
+
+(message "匯出完成！")

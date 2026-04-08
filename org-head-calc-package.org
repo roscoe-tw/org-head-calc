@@ -1,0 +1,13 @@
+#+TITLE: Org 計算端板厚度
+* 專案組織圖
+- [[file+emacs:organization-chart.org][organization-chart.org]]
+
+* github 設定
+- [[file+emacs:github-settings.org][github-settings.org]]
+  - publish.yml
+* org publish.el 設定
+- [[file+emacs:org-publish-settings.org][org publish settings]]
+  
+* README/ 說明
+- [[file+emacs:README.org][README.org]]
+
