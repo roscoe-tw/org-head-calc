@@ -21,7 +21,6 @@
     push:
       branches: [ main ]
 
-  # 強制使用 Node 24 運行，解決 Node 20 棄用警告
   env:
     FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -29,10 +28,12 @@
     publish:
       runs-on: ubuntu-latest
       permissions:
-        contents: write
+        contents: write  # 必須有這行才能解決 exit code 128
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
+          with:
+            submodules: false  # 強制關閉子模組檢查，解決 .gitmodules 錯誤
 
         - name: Install Emacs & Maxima
           run: |
@@ -44,11 +45,11 @@
             mkdir -p ~/.emacs.d
             emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html
 
-        - name: Setup Reveal.js
+        - name: Setup Reveal.js (Clean Install)
           run: |
-            if [ ! -d "reveal.js" ]; then
-              git clone --depth 1 https://github.com/hakimel/reveal.js.git
-            fi
+            # 刪除可能存在的殘留資料夾，重新乾淨下載
+            rm -rf reveal.js
+            git clone --depth 1 https://github.com/hakimel/reveal.js.git
 
         - name: Deploy to GitHub Pages
           uses: peaceiris/actions-gh-pages@v3
@@ -56,8 +57,5 @@
             github_token: ${{ secrets.GITHUB_TOKEN }}
             publish_dir: ./
             publish_branch: gh-pages
-            # 修正警告：將 'nojekyll' 改為 'disable_nojekyll: false' 或 'enable_jekyll: false'
-            # 在 peaceiris/actions-gh-pages 中，預設就會產生 .nojekyll。
-            # 如果你想明確關閉 Jekyll，請使用：
             enable_jekyll: false
 #+end_src
