@@ -19,20 +19,17 @@
 
   on:
     push:
-      branches: [ main ]  # 當你推送到 main 分支時觸發
+      branches: [ main ]
 
-  # 強制使用 Node 24 運行 Actions，消除 2026 年的棄用警告
+  # 強制使用 Node 24 運行，解決 Node 20 棄用警告
   env:
     FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
   jobs:
     publish:
       runs-on: ubuntu-latest
-      
-      # 關鍵：顯式授權此工作流寫入權限，解決退出代碼 128 錯誤
       permissions:
         contents: write
-
       steps:
         - name: Checkout code
           uses: actions/checkout@v4
@@ -44,14 +41,11 @@
 
         - name: Generate HTML Slides
           run: |
-            # 建立必要的配置資料夾
             mkdir -p ~/.emacs.d
-            # 執行 Emacs 批次處理：載入 publish.el 並匯出 calculation.org
             emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html
 
         - name: Setup Reveal.js
           run: |
-            # 下載 Reveal.js 核心檔案以確保投影片樣式正常
             if [ ! -d "reveal.js" ]; then
               git clone --depth 1 https://github.com/hakimel/reveal.js.git
             fi
@@ -59,12 +53,11 @@
         - name: Deploy to GitHub Pages
           uses: peaceiris/actions-gh-pages@v3
           with:
-            # 使用自動生成的 TOKEN 進行發布
             github_token: ${{ secrets.GITHUB_TOKEN }}
-            # 指定發布目錄為當前目錄（包含產出的 .html 與 reveal.js 資料夾）
             publish_dir: ./
-            # 自動建立 .nojekyll 防止 GitHub Pages 忽略以底線開頭的資料夾
-            nojekyll: true
-            # 發布到此分支
             publish_branch: gh-pages
+            # 修正警告：將 'nojekyll' 改為 'disable_nojekyll: false' 或 'enable_jekyll: false'
+            # 在 peaceiris/actions-gh-pages 中，預設就會產生 .nojekyll。
+            # 如果你想明確關閉 Jekyll，請使用：
+            enable_jekyll: false
 #+end_src
