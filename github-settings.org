@@ -22,35 +22,43 @@
       branches: [ main ]
 
   env:
+    # 提前切換 Node 24（避免未來壞掉）
     FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
   jobs:
     publish:
       runs-on: ubuntu-latest
+
       permissions:
-        contents: write  # 必須有這行才能解決 exit code 128
+        contents: write
+
       steps:
+        # 🔴 關鍵：完全禁止 submodule 干擾
+        - name: Disable submodule completely
+          run: |
+            git config --global submodule.recurse false
+
+        # 🔴 關鍵：乾淨 checkout
         - name: Checkout code
           uses: actions/checkout@v4
           with:
-            submodules: false  # 強制關閉子模組檢查，解決 .gitmodules 錯誤
+            submodules: false
+            fetch-depth: 0
+            clean: true
 
+        # 🧰 安裝環境
         - name: Install Emacs & Maxima
           run: |
             sudo apt-get update
             sudo apt-get install -y emacs-nox maxima
 
+        # 📄 匯出 HTML（reveal.js 走 CDN）
         - name: Generate HTML Slides
           run: |
             mkdir -p ~/.emacs.d
             emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html
 
-        - name: Setup Reveal.js (Clean Install)
-          run: |
-            # 刪除可能存在的殘留資料夾，重新乾淨下載
-            rm -rf reveal.js
-            git clone --depth 1 https://github.com/hakimel/reveal.js.git
-
+        # 🚀 部署到 gh-pages
         - name: Deploy to GitHub Pages
           uses: peaceiris/actions-gh-pages@v3
           with:
