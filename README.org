@@ -1,0 +1,1 @@
+使用 org 檔案設定碟形端板參數，上傳到 github 後由 GitHub Actions 產生結果。

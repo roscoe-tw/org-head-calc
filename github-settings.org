@@ -1,0 +1,70 @@
+* github 設定
+** emacs lisp 設定                                                 :noexport:
+#+begin_src emacs-lisp
+  ;; 如果沒有安裝就自動安裝
+  (unless (package-installed-p 'yaml-mode)
+    (package-refresh-contents)
+    (package-install 'yaml-mode))
+
+  ;; 讓 Org-babel 支援匯出與編輯 YAML
+  (add-to-list 'org-src-lang-modes '("yaml" . yaml))
+#+end_src
+
+#+RESULTS:
+: ((yaml . yaml) (html . web) (dot . graphviz-dot) (translate . text) (C . c) (C++ . c++) (asymptote . asy) (beamer . latex) (calc . fundamental) (cpp . c++) (ditaa . artist) (desktop . conf-desktop) (dot . fundamental) (elisp . emacs-lisp) (ocaml . tuareg) (screen . shell-script) (sqlite . sql) (toml . conf-toml) (shell . sh) (ash . sh) (sh . sh) (bash . sh) (jsh . sh) (bash2 . sh) (dash . sh) (dtksh . sh) (ksh . sh) (es . sh) (rc . sh) (itcsh . sh) (tcsh . sh) (jcsh . sh) (csh . sh) (ksh88 . sh) (oash . sh) (pdksh . sh) (mksh . sh) (posix . sh) (wksh . sh) (wsh . sh) (zsh . sh) (rpm . sh))
+
+** publish.yml
+#+begin_src yaml :tangle .github/workflows/publish.yml
+  name: Publish HTML Slides
+
+  on:
+    push:
+      branches: [ main ]  # 當你推送到 main 分支時觸發
+
+  # 強制使用 Node 24 運行 Actions，消除 2026 年的棄用警告
+  env:
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+  jobs:
+    publish:
+      runs-on: ubuntu-latest
+      
+      # 關鍵：顯式授權此工作流寫入權限，解決退出代碼 128 錯誤
+      permissions:
+        contents: write
+
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+
+        - name: Install Emacs & Maxima
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y emacs-nox maxima
+
+        - name: Generate HTML Slides
+          run: |
+            # 建立必要的配置資料夾
+            mkdir -p ~/.emacs.d
+            # 執行 Emacs 批次處理：載入 publish.el 並匯出 calculation.org
+            emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html
+
+        - name: Setup Reveal.js
+          run: |
+            # 下載 Reveal.js 核心檔案以確保投影片樣式正常
+            if [ ! -d "reveal.js" ]; then
+              git clone --depth 1 https://github.com/hakimel/reveal.js.git
+            fi
+
+        - name: Deploy to GitHub Pages
+          uses: peaceiris/actions-gh-pages@v3
+          with:
+            # 使用自動生成的 TOKEN 進行發布
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            # 指定發布目錄為當前目錄（包含產出的 .html 與 reveal.js 資料夾）
+            publish_dir: ./
+            # 自動建立 .nojekyll 防止 GitHub Pages 忽略以底線開頭的資料夾
+            nojekyll: true
+            # 發布到此分支
+            publish_branch: gh-pages
+#+end_src
