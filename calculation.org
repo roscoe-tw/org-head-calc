@@ -28,44 +28,35 @@
 | 銲道效率     | E    | 0.85 | N/A |
 
 * Maxima 參數查找函數
-#+BEGIN_SRC maxima :exports none :results value
-/* 在表格中透過參數名稱查找數值 */
-find_val(name, tbl) := block(
-    for row in tbl do (
-        if row[1] = name then return(row[3])
-    ),
-    error("找不到參數: " + name)
-)$
-#+END_SRC
-
-#+RESULTS:
-
-* 厚度計算流程
-** 係數 M 之計算
-根據 ASME Section VIII, Div. 1, Appendix 1-4：
-\[ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right) \]
-
 #+NAME: calc_m
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-/* 提取參數 */
-L : float(find_val("冠部內半徑", params))$
-r : float(find_val("轉角內半徑", params))$
+/* 1. 更加強健的查表函數 */
+find_val_sym(target, tbl) := block(
+    [val: false],
+    for row in tbl do (
+        /* 強制轉字串、去空白、比對第二欄 */
+        if ssubst("", " ", string(row[2])) = target then val: row[3]
+    ),
+    if val = false then error("NotFound: ", target) else val
+)$
 
-/* 檢查參數有效性 */
-if (L <= 0 or r <= 0) then
-    error("參數錯誤：L 或 r <= 0")$
-    
-/* 計算係數 M */
-M_val : 0.25 * (3 + sqrt(L/r))$
+/* 2. 執行計算 */
+L_val : float(find_val_sym("L", params))$
+r_val : float(find_val_sym("r", params))$
+M_val : 0.25 * (3 + sqrt(L_val/r_val))$
 
-/* 回傳 HTML 結果 */
-concat("<div id='result-M' class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>",
-       "當 L = ", string(L), ", r = ", string(r), "<br/>",
-       "M = <strong>", string(M_val), "</strong></div>")$
+/* 3. 使用 print 代替 printf (在遠端 batch 模式下更穩定) */
+/* 注意：外層加上 concat 確保輸出是一個完整的 HTML 字串 */
+print(concat("<div class='results-box'>",
+             "<strong>(1) 係數 M 計算結果</strong><br/>",
+             "當 L = ", string(L_val), ", r = ", string(r_val), "<br/>",
+             "M = <strong>", string(M_val), "</strong></div>"))$
 #+END_SRC
 
 #+RESULTS: calc_m
 #+begin_export html
+<div class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>當 L = 1200.0, r = \
+72.0<br/>M = <strong>1.7706207261596576</strong></div> 
 #+end_export
 
 ** 最小需求厚度 (t)
@@ -74,30 +65,43 @@ concat("<div id='result-M' class='results-box'><strong>(1) 係數 M 計算結果
 
 #+NAME: calc_t
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-/* 提取必要參數 */
-P : float(find_val("設計壓力", params))$
-L : float(find_val("冠部內半徑", params))$
-r : float(find_val("轉角內半徑", params))$
-S : float(find_val("材料許用應力", params))$
-E : float(find_val("銲道效率", params))$
+/* 1. 輔助函數：強制去空白並轉換字串比對 */
+find_val_sym(target, tbl) := block(
+    [val: false],
+    for row in tbl do (
+        if ssubst("", " ", string(row[2])) = target then val: row[3]
+    ),
+    if val = false then error("NotFound: ", target) else val
+)$
 
-/* 檢查參數有效性 */
-if (P <= 0 or S <= 0 or E <= 0) then
-    error("參數錯誤：P, S, E 必須 > 0")$
+/* 2. 提取所有必要參數 */
+P : float(find_val_sym("P", params))$
+L : float(find_val_sym("L", params))$
+r : float(find_val_sym("r", params))$
+S : float(find_val_sym("S", params))$
+E : float(find_val_sym("E", params))$
 
-/* 計算 M */
-M : 0.25 * (3 + sqrt(L/r))$
+/* 3. 計算邏輯 */
+if (P <= 0 or S <= 0 or E <= 0) then error("P, S, E must > 0")$
 
-/* 計算需求厚度 */
-t_req : (P * L * M) / (2*S*E - 0.2*P)$
+/* 計算係數 M */
+M_val : 0.25 * (3 + sqrt(L/r))$
 
-/* 回傳 HTML 結果 */
-concat("<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>",
-       "t_req = <strong>", string(t_req), "</strong> mm</div>")$
+/* 計算需求厚度 t_req (ASME Sec. VIII Div.1 Appendix 1-4) */
+t_req : (P * L * M_val) / (2*S*E - 0.2*P)$
+
+/* 4. 輸出 HTML 結果 */
+print(concat("<div id='result-t' class='results-box'>",
+             "<strong>(2) 需求厚度計算結果</strong><br/>",
+             "當 P = ", string(P), " MPa, S = ", string(S), " MPa, E = ", string(E), "<br/>",
+             "計算得 t_req = <strong>", string(t_req), "</strong> mm</div>"))$
 #+END_SRC
 
 #+RESULTS: calc_t
 #+begin_export html
+<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>當 P =\
+ 1.6 MPa, S = 137.0 MPa, E = 0.85<br/>計算得 t_req = <strong>14.616870729325576</\
+strong> mm</div> 
 #+end_export
 
 * 工程判斷 (Engineering Judgment)
@@ -119,5 +123,5 @@ concat("<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 17:41:09 2026</div>
+<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 18:02:33 2026</div>
 #+end_export
