@@ -5,8 +5,8 @@
 #+OPTIONS: toc:nil num:nil tex:mathjax
 #+REVEAL_THEME: league
 #+REVEAL_TRANS: slide
-#+REVEAL_INIT_OPTIONS: width:1920, height:1080, transition:'slide', controls:true, progress:true, margin:0.1
-#+REVEAL_HEAD_PREAMBLE: <style>.reveal section{font-size: 24px;} .reveal table{margin-left:auto; margin-right:auto;} .reveal .results-box{background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #777;}</style>
+#+REVEAL_INIT_OPTIONS: width:1280, height:720, transition:'slide', controls:true, progress:true, margin:0.05, minScale:0.5, maxScale:3
+#+REVEAL_HEAD_PREAMBLE: <style> .reveal section{font-size: 24px;} @media screen and (max-width: 500px) { .reveal section{font-size: 30px;} } .reveal table{margin-left:auto; margin-right:auto;} .reveal .results-box{background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #777;} .scroll-box{ max-height: 580px; overflow-y: auto; padding: 20px !important; text-align: left; -webkit-overflow-scrolling: touch;} </style>
 
 * 專案簡介
 本文件採用 **Docs-as-Code** 工作流，確保工程計算與技術文件的一致性。
@@ -15,7 +15,7 @@
 - *Reveal.js*: CI/CD 自動化生成的 HTML5 簡報
 
 * 免責宣告 (Disclaimer)
-#+REVEAL_HTML: <div style="background: rgba(244, 67, 54, 0.2); border-left: 10px solid #f44336; padding: 210px; text-align: left;">
+#+REVEAL_HTML: <div class="scroll-box" style="background: rgba(244, 67, 54, 0.2); border-left: 10px solid #f44336;">
 **注意：本文件非正式法規認證文件**
 1. **僅供參考** ：本計算書僅作為初步設計評估與學術探討之用，不具備法律效力，亦不可直接作為壓力容器製造、檢驗或申報之法律依據。
 2. **無擔保聲明** ：雖然本文件力求計算邏輯符合 ASME Sec. VIII Div.1 之規範，但開發者不保證代碼執行結果之絕對準確性，亦不對因使用本文件產生的任何直接或間接損失負責。
@@ -32,14 +32,15 @@
 | 設計壓力     | P    |  1.6 | MPa  |
 | 內徑         | Di   | 1200 | mm   |
 | 冠部內半徑   | L    | 1200 | mm   |
-| 轉角內半徑   | r    | 72   | mm   |
-| 材料許用應力 | S    | 138 | MPa  |
+| 轉角內半徑   | r    |   72 | mm   |
+| 材料許用應力 | S    |  138 | MPa  |
 | 焊道效率     | E    | 0.85 | N/A  |
 | 公稱厚度     | tn   | 16.0 | mm   |
-| 腐蝕裕度     | CA   | 2.0  | mm   |
+| 腐蝕裕度     | CA   |  2.0 | mm   |
 
-* 封頭幾何係數 M 的計算公式
-#+REVEAL_HTML: <div>
+* 碟形端板厚度計算
+** 幾何係數 M 的計算公式
+#+REVEAL_HTML: <div class="scroll-box">
 #+ATTR_HTML: :width 400px :alt "Torispherica drawing"
 [[file+emacs:assets/images/Torispherical-drawing-1.png]]
 #+begin_notes
@@ -54,9 +55,8 @@ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right)
 \]
 
 其中：
-- *L* :: 封頭內部的球面半徑 (Inside Dish Radius)
-- *r* :: 封頭邊緣的轉角半徑 (Inside Knuckle Radius)
-#+REVEAL_HTML: </div>
+- *L* : 封頭內部的球面半徑 (Inside Dish Radius)
+- *r* : 封頭邊緣的轉角半徑 (Inside Knuckle Radius)
 
 #+NAME: calc_m
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
@@ -86,7 +86,10 @@ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right)
 <div class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>當 L = 1200.0,<br/>   r = 72.0<br/>    M = <strong>1.7706</strong></div> 
 #+end_export
 
+#+REVEAL_HTML: </div>
+
 ** 最小需求厚度 (t)
+#+REVEAL_HTML: <div class="scroll-box">
 公式如下：
 \[ t = \frac{P \cdot L \cdot M}{2SE - 0.2P} \]
 #+NAME: calc_t
@@ -121,13 +124,15 @@ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right)
 <div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>計算得 t_req = <strong>14.511</strong> mm</div> 
 #+end_export
 
+#+REVEAL_HTML: </div>
+
 * 自動化設計評估
+#+REVEAL_HTML: <div class="scroll-box">
 #+NAME: design_check
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
 linel: 1000$
 fpprintprec: 5$
 
-/* 1. 強化版查表函數 */
 find_val_sym(target, tbl) := block([val: false],
     for row in tbl do (
         if ssubst("", " ", string(row[2])) = target then val: row[3]
@@ -135,7 +140,6 @@ find_val_sym(target, tbl) := block([val: false],
     if val = false then error("NotFound: ", target) else val
 )$
 
-/* 2. 提取計算參數 */
 P : float(find_val_sym("P", params))$
 L : float(find_val_sym("L", params))$
 r : float(find_val_sym("r", params))$
@@ -144,19 +148,13 @@ E : float(find_val_sym("E", params))$
 tn : float(find_val_sym("tn", params))$
 CA : float(find_val_sym("CA", params))$
 
-/* 3. 計算需求厚度 t_req */
 M_val : 0.25 * (3 + sqrt(L/r))$
 t_req : (P * L * M_val) / (2*S*E - 0.2*P)$
-
-/* 4. 計算有效厚度 t_available */
-/* 考慮公稱厚度扣除腐蝕裕度 */
 t_available : tn - CA$
 
-/* 5. 邏輯判定 */
 is_pass : if t_available >= t_req then true else false$
-color : if is_pass then "#4CAF50" else "#f44336"$ /* 綠色或紅色 */
+color : if is_pass then "#4CAF50" else "#f44336"$
 
-/* 6. 輸出 HTML */
 print(concat("<div class='results-box' style='border: 2px solid ", color, "; background: rgba(255,255,255,0.05);'>",
              "<strong style='color:", color, "; font-size: 1.2em;'>[ ", if is_pass then "PASS 符合規範" else "FAIL 厚度不足", " ]</strong><br/><br/>",
              "● 最小需求厚度 (t_req)：<strong>", string(t_req), "</strong> mm<br/>",
@@ -173,7 +171,9 @@ print(concat("<div class='results-box' style='border: 2px solid ", color, "; bac
 <div class='results-box' style='border: 2px solid #f44336; background: rgba(255,255,255,0.05);'><strong style='color:#f44336; font-size: 1.2em;'>[ FAIL 厚度不足 ]</strong><br/><br/>● 最小需求厚度 (t_req)：<strong>14.511</strong> mm<br/>● 選用有效厚度 (tn - CA)：<strong>16.0 - 2.0 = 14.0</strong> mm<br/><span style='color: #ff9800;'>⚠️ 提示：選用厚度不足！建議將公稱厚度 tn 增加至至少 <strong>17</strong> mm。</span></div> 
 #+end_export
 
-* 工程判斷 (Engineering Judgment)                                  :noexport:
+#+REVEAL_HTML: </div>
+
+* 工程判斷 (Engineering Judgment)                                     :noexport:
 #+BEGIN_QUOTE
 **設計總結：**
 1. 根據 ASME 2025 規範，計算得最小需求厚度 $t_{req} \approx 8.7 \, mm$。
@@ -187,10 +187,10 @@ print(concat("<div class='results-box' style='border: 2px solid ", color, "; bac
 
 * 最後編譯時間
 #+BEGIN_SRC emacs-lisp :exports results :results html
-  (format "<div style='font-size:0.8em; color:gray;'>最後編譯時間：%s</div>" (current-time-string))
+  (concat "<div style='font-size:0.8em; color:gray;'>最後編譯時間：" (current-time-string) "</div>")
 #+END_SRC
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 23:03:04 2026</div>
+<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 23:47:19 2026</div>
 #+end_export
