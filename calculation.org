@@ -31,10 +31,10 @@
 
 #+NAME: calc_m
 #+BEGIN_SRC maxima :var params=design_params :exports both
-L: second(assoc("冠部內半徑", params)),
-r: second(assoc("轉角內半徑", params)),
-M_val: 0.25 * (3 + sqrt(L/r)),
-print("計算結果 M =", float(M_val));
+  L: second(assoc("冠部內半徑", params)),
+  r: second(assoc("轉角內半徑", params)),
+  M_val: 0.25 * (3 + sqrt(L/r)),
+  print("計算結果 M =", float(M_val));
 #+END_SRC
 
 ** 最小需求厚度 (t)
