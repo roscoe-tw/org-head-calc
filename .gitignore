@@ -4,3 +4,6 @@ public/*
 org/*.html
 *.org_archive~
 .gitignore~
+.elpa/*
+local-run.org
+calculation.html
