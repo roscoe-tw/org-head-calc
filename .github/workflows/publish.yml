@@ -1,51 +1,63 @@
-name: Publish HTML Slides
+name: Publish ASME Calculation Slides
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main  # 或是您使用的分支名稱，如 master
+  workflow_dispatch: # 允許手動觸發執行
 
-env:
-  # 提前切換 Node 24（避免未來壞掉）
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+# 設定權限以允許部署到 GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
-
     steps:
-      # 🔴 關鍵：完全禁止 submodule 干擾
-      - name: Disable submodule completely
-        run: |
-          git config --global submodule.recurse false
-
-      # 🔴 關鍵：乾淨 checkout
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          submodules: false
-          fetch-depth: 0
-          clean: true
 
-      # 🧰 安裝環境
-      - name: Install Emacs & Maxima
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y emacs-nox maxima
+          sudo apt-get install -y maxima emacs-nox
 
-      # 📄 匯出 HTML（reveal.js 走 CDN）
-      - name: Generate HTML Slides
+      - name: Setup Emacs Packages
         run: |
-          mkdir -p ~/.emacs.d
-           emacs --batch -l publish.el # emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html 
+          # 建立 elpa 目錄並由 publish.el 進行套件安裝
+          mkdir -p .elpa
 
-      # 🚀 部署到 gh-pages
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Execute Build Script (Maxima + Org Export)
+        run: |
+          emacs --batch -l publish.el
+
+      - name: Verify Output File
+        run: |
+          if [ ! -f "calculation.html" ]; then
+            echo "❌ 錯誤：找不到 calculation.html，編譯可能失敗。"
+            exit 1
+          fi
+          echo "✅ 成功產出 calculation.html"
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
-          publish_branch: gh-pages
-          enable_jekyll: false
+          # 部署根目錄下的所有內容
+          path: '.'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}calculation.html
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
