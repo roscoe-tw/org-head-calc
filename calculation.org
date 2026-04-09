@@ -164,5 +164,5 @@ print(concat("<div class='results-box' style='border: 2px solid ", color, "; bac
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 10:33:55 2026</div>
+<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 10:42:32 2026</div>
 #+end_export
