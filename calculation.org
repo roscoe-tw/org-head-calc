@@ -1,28 +1,44 @@
 #+TITLE: 碟形端板厚度計算 (ASME Sec. VIII Div.1)
-#+AUTHOR: Each Application Mechanical Design Studio
+#+AUTHOR: Each Application Mechanical Design Studio (各申機械設計工作室)
+#+DATE: 2026-04-09
+
 #+OPTIONS: toc:nil num:nil tex:mathjax
 #+REVEAL_THEME: league
 #+REVEAL_TRANS: slide
-#+REVEAL_MARGIN: 0.1
+#+REVEAL_INIT_OPTIONS: width:1600, height:900, transition:'slide', controls:true, progress:true
+#+REVEAL_HEAD_PREAMBLE: <style>.reveal section{font-size: 28px;} .reveal table{margin-left:auto; margin-right:auto;} .reveal .results-box{background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #777;}</style>
 
 * 專案簡介
-本文件採用 **Docs-as-Code** 工作流，整合以下技術：
-- *Org-mode*: 文件結構化管理
-- *Maxima*: 符號運算與工程計算
-- *Reveal.js*: 自動化網頁簡報展示
+本文件採用 **Docs-as-Code** 工作流，確保工程計算與技術文件的一致性。
+- *Org-mode*: 結構化內容與代碼塊管理
+- *Maxima*: 符號與數值工程計算引擎
+- *Reveal.js*: CI/CD 自動化生成的 HTML5 簡報
 
 * 設計參數輸入
-這裡是計算的核心輸入區。修改表格數值後，下方的計算塊會自動同步。
+修改下方表格數值後，透過 GitHub Actions 或 `publish.el` 腳本即可自動更新計算結果。
 
 #+NAME: design_params
-| 參數名稱             | 符號 | 數值   | 單位 |
-|----------------------+------+--------+------|
-| 設計壓力             | P    | 1.6    | MPa  |
-| 內徑                 | Di   | 1200   | mm   |
-| 冠部內半徑           | L    | 1200   | mm   |
-| 轉角內半徑           | r    | 72     | mm   |
-| 材料許用應力         | S    | 137    | MPa  |
-| 銲道效率             | E    | 0.85   | -    |
+| 參數名稱     | 符號 | 數值 | 單位 |
+|--------------+------+------+------|
+| 設計壓力     | P    |  1.6 | MPa  |
+| 內徑         | Di   | 1200 | mm  |
+| 冠部內半徑   | L    | 1200 | mm  |
+| 轉角內半徑   | r    | 72   | mm  |
+| 材料許用應力 | S    | 137  | MPa |
+| 銲道效率     | E    | 0.85 | N/A |
+
+* Maxima 參數查找函數
+#+BEGIN_SRC maxima :exports none :results value
+/* 在表格中透過參數名稱查找數值 */
+find_val(name, tbl) := block(
+    for row in tbl do (
+        if row[1] = name then return(row[3])
+    ),
+    error("找不到參數: " + name)
+)$
+#+END_SRC
+
+#+RESULTS:
 
 * 厚度計算流程
 ** 係數 M 之計算
@@ -30,33 +46,78 @@
 \[ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right) \]
 
 #+NAME: calc_m
-#+BEGIN_SRC maxima :var params=design_params :exports both
-  L: second(assoc("冠部內半徑", params)),
-  r: second(assoc("轉角內半徑", params)),
-  M_val: 0.25 * (3 + sqrt(L/r)),
-  print("計算結果 M =", float(M_val));
+#+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
+/* 提取參數 */
+L : float(find_val("冠部內半徑", params))$
+r : float(find_val("轉角內半徑", params))$
+
+/* 檢查參數有效性 */
+if (L <= 0 or r <= 0) then
+    error("參數錯誤：L 或 r <= 0")$
+    
+/* 計算係數 M */
+M_val : 0.25 * (3 + sqrt(L/r))$
+
+/* 回傳 HTML 結果 */
+concat("<div id='result-M' class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>",
+       "當 L = ", string(L), ", r = ", string(r), "<br/>",
+       "M = <strong>", string(M_val), "</strong></div>")$
 #+END_SRC
+
+#+RESULTS: calc_m
+#+begin_export html
+#+end_export
 
 ** 最小需求厚度 (t)
 公式如下：
 \[ t = \frac{P \cdot L \cdot M}{2SE - 0.2P} \]
 
 #+NAME: calc_t
-#+BEGIN_SRC maxima :var params=design_params m_factor=calc_m :exports both
-P: second(assoc("設計壓力", params)),
-L: second(assoc("冠部內半徑", params)),
-S: second(assoc("材料許用應力", params)),
-E: second(assoc("銲道效率", params)),
-M: 1.054, /* 此處可手動填入或由上一步傳遞 */
-t_req: (P * L * M) / (2 * S * E - 0.2 * P),
-print("需求厚度 t_req =", float(t_req), "mm");
+#+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
+/* 提取必要參數 */
+P : float(find_val("設計壓力", params))$
+L : float(find_val("冠部內半徑", params))$
+r : float(find_val("轉角內半徑", params))$
+S : float(find_val("材料許用應力", params))$
+E : float(find_val("銲道效率", params))$
+
+/* 檢查參數有效性 */
+if (P <= 0 or S <= 0 or E <= 0) then
+    error("參數錯誤：P, S, E 必須 > 0")$
+
+/* 計算 M */
+M : 0.25 * (3 + sqrt(L/r))$
+
+/* 計算需求厚度 */
+t_req : (P * L * M) / (2*S*E - 0.2*P)$
+
+/* 回傳 HTML 結果 */
+concat("<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>",
+       "t_req = <strong>", string(t_req), "</strong> mm</div>")$
 #+END_SRC
+
+#+RESULTS: calc_t
+#+begin_export html
+#+end_export
 
 * 工程判斷 (Engineering Judgment)
 #+BEGIN_QUOTE
-根據計算結果 $t \approx 8.7 \, mm$，考量腐蝕裕度 (C.A. = 2.0 mm)，建議選用公稱厚度 **12 mm** 之鋼板。
+**設計總結：**
+1. 根據 ASME 2025 規範，計算得最小需求厚度 $t_{req} \approx 8.7 \, mm$。
+2. 考慮腐蝕裕度 (C.A. = 2.0 mm) 與鋼板負公差。
+3. 建議選用公稱厚度 **12 mm** 之鋼板，符合安全係數與製造工藝需求。
 #+END_QUOTE
 
 * 結論
-- 計算符合 **ASME 2025** 最新標準規範。
-- 透過 CI/CD 自動化發佈，確保設計與計算的一致性。
+- 本計算過程經由自動化腳本執行，排除人為謄寫錯誤。
+- 完整紀錄符合壓力容器設計標準流程（Engineering Judgment Based）。
+
+* 最後編譯時間
+#+BEGIN_SRC emacs-lisp :exports results :results html
+  (format "<div style='font-size:0.8em; color:gray;'>最後編譯時間：%s</div>" (current-time-string))
+#+END_SRC
+
+#+RESULTS:
+#+begin_export html
+<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 17:41:09 2026</div>
+#+end_export

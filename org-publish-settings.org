@@ -1,53 +1,123 @@
 * org publish.el 設定
 #+begin_src emacs-lisp :tangle publish.el
-  ;;; publish.el --- GitHub Actions 的 Org-mode 匯出設定腳本
+  ;;; publish.el --- Org-mode + Maxima + Reveal.js CI build script
 
-  ;; 1. 初始化套件管理系統 (ELPA/MELPA)
+  ;; --------------------------------------------------
+  ;; 0. 強制 UTF-8（避免中文表格解析問題）
+  ;; --------------------------------------------------
+  (set-language-environment "UTF-8")
+  (set-default-coding-systems 'utf-8)
+  (prefer-coding-system 'utf-8)
+
+  ;; --------------------------------------------------
+  ;; 1. 套件管理
+  ;; --------------------------------------------------
   (require 'package)
-  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                           ("gnu"   . "https://elpa.gnu.org/packages/")
-                           ("nongnu". "https://elpa.nongnu.org/nongnu/")))
+  (setq package-archives
+        '(("melpa" . "https://melpa.org/packages/")
+          ("gnu"   . "https://elpa.gnu.org/packages/")
+          ("nongnu". "https://elpa.nongnu.org/nongnu/")))
 
-  ;; 設定套件安裝路徑（避免污染系統目錄）
   (setq package-user-dir (expand-file-name "./.elpa" default-directory))
   (package-initialize)
-
-  ;; 2. 自動更新與安裝必要套件
-  (setq to-be-installed '(ox-reveal yaml-mode htmlize))
 
   (unless package-archive-contents
     (package-refresh-contents))
 
-  (dolist (pkg to-be-installed)
+  (dolist (pkg '(ox-reveal htmlize))
     (unless (package-installed-p pkg)
       (package-install pkg)))
 
-  ;; 3. 載入必要的模組
+  ;; --------------------------------------------------
+  ;; 2. 載入核心模組
+  ;; --------------------------------------------------
   (require 'org)
   (require 'ox-reveal)
   (require 'ob-maxima)
 
-  ;; 4. 配置 Org-babel 執行環境
+  ;; --------------------------------------------------
+  ;; 3. Babel 設定
+  ;; --------------------------------------------------
+  (setq org-confirm-babel-evaluate nil)
+  (setq org-babel-maxima-command "maxima")
+
   (org-babel-do-load-languages
    'org-babel-load-languages
-   '((maxima . t)   ; 啟動 Maxima 支援
+   '((maxima . t)
      (emacs-lisp . t)))
 
-  ;; 關閉代碼執行前的確認詢問 (CI 環境必須設定)
-  (setq org-confirm-babel-evaluate nil)
-
-  ;; 5. Reveal.js 相關設定
-  ;; 如果你在 calculation.org 沒有設定路徑，可以在這裡統一設定 CDN
+  ;; --------------------------------------------------
+  ;; 4. Reveal.js 設定
+  ;; --------------------------------------------------
   (setq org-reveal-root "https://cdn.jsdelivr.net/npm/reveal.js")
-  (setq org-reveal-mathjax t) ; 啟用 MathJax 支援公式渲染
+  (setq org-reveal-mathjax t)
 
-  ;; 6. 強制執行編譯並顯示進度 (供 CI Log 查閱)
-  (message "開始編譯 calculation.org...")
+  ;; --------------------------------------------------
+  ;; 5. Fail-fast：確認 Maxima 存在
+  ;; --------------------------------------------------
+  (unless (executable-find "maxima")
+    (error "❌ Maxima 未安裝，請先安裝 maxima"))
 
-  ;; 註：此腳本在 GitHub Action 中透過以下指令呼叫：
-  ;; emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html
+  ;; --------------------------------------------------
+  ;; 6. 主流程
+  ;; --------------------------------------------------
+  (defun build-slides ()
+    (let ((org-file (expand-file-name "calculation.org")))
+      (unless (file-exists-p org-file)
+        (error "❌ 找不到 calculation.org"))
 
-  (message "匯出完成！")
+      (message ">>> 開啟檔案: %s" org-file)
+
+      (with-current-buffer (find-file org-file)
+
+        ;; 確保 org-mode 完整初始化
+        (org-mode)
+
+        ;; --------------------------------------------------
+        ;; 清除舊結果
+        ;; --------------------------------------------------
+        (message ">>> 清除舊的 RESULTS")
+        (org-babel-remove-result-one-or-many t)
+
+        ;; --------------------------------------------------
+        ;; 強制重新執行（關鍵）
+        ;; --------------------------------------------------
+        (message ">>> 執行所有 Babel block（Maxima）")
+        (org-babel-execute-buffer 'refresh)
+
+        ;; --------------------------------------------------
+        ;; 驗證：是否真的產生 RESULTS
+        ;; --------------------------------------------------
+        (save-excursion
+          (goto-char (point-min))
+          (unless (re-search-forward "#\\+RESULTS:" nil t)
+            (error "❌ 沒有產生任何 RESULTS，Babel 執行失敗")))
+
+        ;; --------------------------------------------------
+        ;; 寫入檔案（關鍵）
+        ;; --------------------------------------------------
+        (message ">>> 儲存計算結果")
+        (save-buffer)
+
+        ;; --------------------------------------------------
+        ;; 匯出 Reveal HTML
+        ;; --------------------------------------------------
+        (message ">>> 匯出 Reveal.js HTML")
+        (org-reveal-export-to-html)
+
+        (message ">>> ✅ 匯出完成！"))))
+
+  ;; --------------------------------------------------
+  ;; 7. 執行 + 錯誤捕捉
+  ;; --------------------------------------------------
+  (condition-case err
+      (build-slides)
+    (error
+     (message ">>> ❌ 發生錯誤: %s" (error-message-string err))
+     (kill-emacs 1)))
+
+  (message ">>> 🎉 Build Success")
+  (kill-emacs 0)
 #+end_src
 ** .dir-locals.el
 #+begin_src emacs-lisp :tangle .dir-locals.el
