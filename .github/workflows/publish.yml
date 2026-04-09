@@ -39,7 +39,7 @@ jobs:
       - name: Generate HTML Slides
         run: |
           mkdir -p ~/.emacs.d
-          emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html
+           emacs --batch -l publish.el # emacs --batch -l publish.el calculation.org -f org-reveal-export-to-html 
 
       # 🚀 部署到 gh-pages
       - name: Deploy to GitHub Pages
