@@ -5,8 +5,8 @@
 #+OPTIONS: toc:nil num:nil tex:mathjax
 #+REVEAL_THEME: league
 #+REVEAL_TRANS: slide
-#+REVEAL_INIT_OPTIONS: width:1600, height:900, transition:'slide', controls:true, progress:true
-#+REVEAL_HEAD_PREAMBLE: <style>.reveal section{font-size: 28px;} .reveal table{margin-left:auto; margin-right:auto;} .reveal .results-box{background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #777;}</style>
+#+REVEAL_INIT_OPTIONS: width:1920, height:1080, transition:'slide', controls:true, progress:true, margin:0.1
+#+REVEAL_HEAD_PREAMBLE: <style>.reveal section{font-size: 24px;} .reveal table{margin-left:auto; margin-right:auto;} .reveal .results-box{background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #777;}</style>
 
 * 專案簡介
 本文件採用 **Docs-as-Code** 工作流，確保工程計算與技術文件的一致性。
@@ -24,38 +24,57 @@
 | 內徑         | Di   | 1200 | mm   |
 | 冠部內半徑   | L    | 1200 | mm   |
 | 轉角內半徑   | r    | 72   | mm   |
-| 材料許用應力 | S    | 137  | MPa  |
-| 銲道效率     | E    | 0.85 | N/A  |
+| 材料許用應力 | S    | 138 | MPa  |
+| 焊道效率     | E    | 0.85 | N/A  |
 | 公稱厚度     | tn   | 16.0 | mm   |
 | 腐蝕裕度     | CA   | 2.0  | mm   |
 
-* Maxima 參數查找函數
+* 封頭幾何係數 M 的計算公式
+#+REVEAL_HTML: <div>
+#+ATTR_HTML: :width 400px :alt "Torispherica drawing"
+[[file+emacs:assets/images/Torispherical-drawing-1.png]]
+#+begin_notes
+圖中標示了 R (相當於 L) 與 r (Knuckle radius) 的幾何關係，這決定了應力集中係數 M。
+#+end_notes
+
+根據 ASME BPVC Section VIII, Division 1, Mandatory Appendix 1-4，
+對於碟形封頭 (Torispherical Head)，其幾何係數 $M$ 的計算公式如下：
+
+\[
+M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right)
+\]
+
+其中：
+- *L* :: 封頭內部的球面半徑 (Inside Dish Radius)
+- *r* :: 封頭邊緣的轉角半徑 (Inside Knuckle Radius)
+#+REVEAL_HTML: </div>
+
 #+NAME: calc_m
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-linel: 1000$       /* 預防自動斷行插入反斜線 */
-fpprintprec: 5$    /* 控制小數點顯示位數 */
+  linel: 1000$       /* 預防自動斷行插入反斜線 */
+  fpprintprec: 5$    /* 控制小數點顯示位數 */
 
-find_val_sym(target, tbl) := block(
+  find_val_sym(target, tbl) := block(
     [val: false],
     for row in tbl do (
-        if ssubst("", " ", string(row[2])) = target then val: row[3]
-    ),
+      if ssubst("", " ", string(row[2])) = target then val: row[3]
+      ),
     if val = false then error("NotFound: ", target) else val
-)$
+    )$
 
-L_val : float(find_val_sym("L", params))$
-r_val : float(find_val_sym("r", params))$
-M_val : 0.25 * (3 + sqrt(L_val/r_val))$
+  L_val : float(find_val_sym("L", params))$
+  r_val : float(find_val_sym("r", params))$
+  M_val : 0.25 * (3 + sqrt(L_val/r_val))$
 
-print(concat("<div class='results-box'>",
-             "<strong>(1) 係數 M 計算結果</strong><br/>",
-             "當 L = ", string(L_val), ", r = ", string(r_val), "<br/>",
-             "M = <strong>", string(M_val), "</strong></div>"))$
+  print(concat("<div class='results-box'>",
+      "<strong>(1) 係數 M 計算結果</strong><br/>",
+      "當 L = ", string(L_val), ",<br/>   r = ", string(r_val), "<br/>",
+      "    M = <strong>", string(M_val), "</strong></div>"))$
 #+END_SRC
 
 #+RESULTS: calc_m
 #+begin_export html
-<div class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>當 L = 1200.0, r = 72.0<br/>M = <strong>1.7706</strong></div> 
+<div class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>當 L = 1200.0,<br/>   r = 72.0<br/>    M = <strong>1.7706</strong></div> 
 #+end_export
 
 ** 最小需求厚度 (t)
@@ -63,34 +82,34 @@ print(concat("<div class='results-box'>",
 \[ t = \frac{P \cdot L \cdot M}{2SE - 0.2P} \]
 #+NAME: calc_t
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-linel: 1000$
-fpprintprec: 5$
+  linel: 1000$
+  fpprintprec: 5$
 
-find_val_sym(target, tbl) := block(
+  find_val_sym(target, tbl) := block(
     [val: false],
     for row in tbl do (
-        if ssubst("", " ", string(row[2])) = target then val: row[3]
-    ),
+      if ssubst("", " ", string(row[2])) = target then val: row[3]
+      ),
     if val = false then error("NotFound: ", target) else val
-)$
+    )$
 
-P : float(find_val_sym("P", params))$
-L : float(find_val_sym("L", params))$
-r : float(find_val_sym("r", params))$
-S : float(find_val_sym("S", params))$
-E : float(find_val_sym("E", params))$
+  P : float(find_val_sym("P", params))$
+  L : float(find_val_sym("L", params))$
+  r : float(find_val_sym("r", params))$
+  S : float(find_val_sym("S", params))$
+  E : float(find_val_sym("E", params))$
 
-M_val : 0.25 * (3 + sqrt(L/r))$
-t_req : (P * L * M_val) / (2*S*E - 0.2*P)$
+  M_val : 0.25 * (3 + sqrt(L/r))$
+  t_req : (P * L * M_val) / (2*S*E - 0.2*P)$
 
-print(concat("<div id='result-t' class='results-box'>",
-             "<strong>(2) 需求厚度計算結果</strong><br/>",
-             "計算得 t_req = <strong>", string(t_req), "</strong> mm</div>"))$
+  print(concat("<div id='result-t' class='results-box'>",
+      "<strong>(2) 需求厚度計算結果</strong><br/>",
+      "計算得 t_req = <strong>", string(t_req), "</strong> mm</div>"))$
 #+END_SRC
 
 #+RESULTS: calc_t
 #+begin_export html
-<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>計算得 t_req = <strong>14.617</strong> mm</div> 
+<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>計算得 t_req = <strong>14.511</strong> mm</div> 
 #+end_export
 
 * 自動化設計評估
@@ -142,7 +161,7 @@ print(concat("<div class='results-box' style='border: 2px solid ", color, "; bac
 
 #+RESULTS: design_check
 #+begin_export html
-<div class='results-box' style='border: 2px solid #f44336; background: rgba(255,255,255,0.05);'><strong style='color:#f44336; font-size: 1.2em;'>[ FAIL 厚度不足 ]</strong><br/><br/>● 最小需求厚度 (t_req)：<strong>14.617</strong> mm<br/>● 選用有效厚度 (tn - CA)：<strong>16.0 - 2.0 = 14.0</strong> mm<br/><span style='color: #ff9800;'>⚠️ 提示：選用厚度不足！建議將公稱厚度 tn 增加至至少 <strong>17</strong> mm。</span></div> 
+<div class='results-box' style='border: 2px solid #f44336; background: rgba(255,255,255,0.05);'><strong style='color:#f44336; font-size: 1.2em;'>[ FAIL 厚度不足 ]</strong><br/><br/>● 最小需求厚度 (t_req)：<strong>14.511</strong> mm<br/>● 選用有效厚度 (tn - CA)：<strong>16.0 - 2.0 = 14.0</strong> mm<br/><span style='color: #ff9800;'>⚠️ 提示：選用厚度不足！建議將公稱厚度 tn 增加至至少 <strong>17</strong> mm。</span></div> 
 #+end_export
 
 * 工程判斷 (Engineering Judgment)                                  :noexport:
@@ -164,5 +183,5 @@ print(concat("<div class='results-box' style='border: 2px solid ", color, "; bac
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 18:30:43 2026</div>
+<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 22:21:28 2026</div>
 #+end_export
