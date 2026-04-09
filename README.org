@@ -1,1 +1,19 @@
+* 專案簡介
+本文件採用 **Docs-as-Code** 工作流，確保工程計算與技術文件的一致性。
+- *Org-mode*: 結構化內容與代碼塊管理
+- *Maxima*: 符號與數值工程計算引擎
+- *Reveal.js*: CI/CD 自動化生成的 HTML5 簡報
+
 使用 org 檔案設定碟形端板參數，上傳到 github 後由 GitHub Actions 產生結果。
+
+* 投影片
+- [[https://roscoe-tw.github.io/org-head-calc/calculation.html][碟形端板厚度計算 (ASME SEC.VIII DIV.1)]]
+* LICENSE
+- [[file+emacs:LICENSE][MIT License]]
+
+* 免責宣告 (Disclaimer)
+**注意：本文件非正式法規認證文件**
+1. **僅供參考** ：本計算書僅作為初步設計評估與學術探討之用，不具備法律效力，亦不可直接作為壓力容器製造、檢驗或申報之法律依據。
+2. **無擔保聲明** ：雖然本文件力求計算邏輯符合 ASME Sec. VIII Div.1 之規範，但開發者不保證代碼執行結果之絕對準確性，亦不對因使用本文件產生的任何直接或間接損失負責。
+3. **專業審核** ：實際工程應用必須由 **具備資格之專業工程師** 進行最終審核、簽署並蓋章後方可執行。
+   * 延伸閱讀： [[https://medium.com/@choice-record/%E5%BE%9E-asme-2023-%E5%88%B0-2025-%E8%A3%BD%E9%80%A0%E5%BB%A0%E5%A6%82%E4%BD%95%E8%AD%89%E6%98%8E%E8%A8%AD%E8%A8%88%E4%BA%BA%E5%93%A1%E7%9A%84-%E9%81%A9%E4%BB%BB%E6%80%A7-5c97d10bb277][從 ASME 2023 到 2025：製造廠如何證明設計人員的「適任性」？]]

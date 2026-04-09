@@ -14,6 +14,15 @@
 - *Maxima*: 符號與數值工程計算引擎
 - *Reveal.js*: CI/CD 自動化生成的 HTML5 簡報
 
+* 免責宣告 (Disclaimer)
+#+REVEAL_HTML: <div style="background: rgba(244, 67, 54, 0.2); border-left: 10px solid #f44336; padding: 210px; text-align: left;">
+**注意：本文件非正式法規認證文件**
+1. **僅供參考** ：本計算書僅作為初步設計評估與學術探討之用，不具備法律效力，亦不可直接作為壓力容器製造、檢驗或申報之法律依據。
+2. **無擔保聲明** ：雖然本文件力求計算邏輯符合 ASME Sec. VIII Div.1 之規範，但開發者不保證代碼執行結果之絕對準確性，亦不對因使用本文件產生的任何直接或間接損失負責。
+3. **專業審核** ：實際工程應用必須由 **具備資格之專業工程師** 進行最終審核、簽署並蓋章後方可執行。
+      * 延伸閱讀： [[https://medium.com/@choice-record/%E5%BE%9E-asme-2023-%E5%88%B0-2025-%E8%A3%BD%E9%80%A0%E5%BB%A0%E5%A6%82%E4%BD%95%E8%AD%89%E6%98%8E%E8%A8%AD%E8%A8%88%E4%BA%BA%E5%93%A1%E7%9A%84-%E9%81%A9%E4%BB%BB%E6%80%A7-5c97d10bb277][從 ASME 2023 到 2025：製造廠如何證明設計人員的「適任性」？]]
+#+REVEAL_HTML: </div>
+
 * 設計參數輸入
 修改下方表格數值後，透過 GitHub Actions 或 `publish.el` 腳本即可自動更新計算結果。
 
@@ -183,5 +192,5 @@ print(concat("<div class='results-box' style='border: 2px solid ", color, "; bac
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 22:21:28 2026</div>
+<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 23:03:04 2026</div>
 #+end_export
