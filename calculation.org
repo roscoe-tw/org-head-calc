@@ -21,32 +21,32 @@
 | 參數名稱     | 符號 | 數值 | 單位 |
 |--------------+------+------+------|
 | 設計壓力     | P    |  1.6 | MPa  |
-| 內徑         | Di   | 1200 | mm  |
-| 冠部內半徑   | L    | 1200 | mm  |
-| 轉角內半徑   | r    | 72   | mm  |
-| 材料許用應力 | S    | 137  | MPa |
-| 銲道效率     | E    | 0.85 | N/A |
+| 內徑         | Di   | 1200 | mm   |
+| 冠部內半徑   | L    | 1200 | mm   |
+| 轉角內半徑   | r    | 72   | mm   |
+| 材料許用應力 | S    | 137  | MPa  |
+| 銲道效率     | E    | 0.85 | N/A  |
+| 公稱厚度     | tn   | 16.0 | mm   |
+| 腐蝕裕度     | CA   | 2.0  | mm   |
 
 * Maxima 參數查找函數
 #+NAME: calc_m
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-/* 1. 更加強健的查表函數 */
+linel: 1000$       /* 預防自動斷行插入反斜線 */
+fpprintprec: 5$    /* 控制小數點顯示位數 */
+
 find_val_sym(target, tbl) := block(
     [val: false],
     for row in tbl do (
-        /* 強制轉字串、去空白、比對第二欄 */
         if ssubst("", " ", string(row[2])) = target then val: row[3]
     ),
     if val = false then error("NotFound: ", target) else val
 )$
 
-/* 2. 執行計算 */
 L_val : float(find_val_sym("L", params))$
 r_val : float(find_val_sym("r", params))$
 M_val : 0.25 * (3 + sqrt(L_val/r_val))$
 
-/* 3. 使用 print 代替 printf (在遠端 batch 模式下更穩定) */
-/* 注意：外層加上 concat 確保輸出是一個完整的 HTML 字串 */
 print(concat("<div class='results-box'>",
              "<strong>(1) 係數 M 計算結果</strong><br/>",
              "當 L = ", string(L_val), ", r = ", string(r_val), "<br/>",
@@ -55,17 +55,17 @@ print(concat("<div class='results-box'>",
 
 #+RESULTS: calc_m
 #+begin_export html
-<div class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>當 L = 1200.0, r = \
-72.0<br/>M = <strong>1.7706207261596576</strong></div> 
+<div class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>當 L = 1200.0, r = 72.0<br/>M = <strong>1.7706</strong></div> 
 #+end_export
 
 ** 最小需求厚度 (t)
 公式如下：
 \[ t = \frac{P \cdot L \cdot M}{2SE - 0.2P} \]
-
 #+NAME: calc_t
 #+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-/* 1. 輔助函數：強制去空白並轉換字串比對 */
+linel: 1000$
+fpprintprec: 5$
+
 find_val_sym(target, tbl) := block(
     [val: false],
     for row in tbl do (
@@ -74,37 +74,78 @@ find_val_sym(target, tbl) := block(
     if val = false then error("NotFound: ", target) else val
 )$
 
-/* 2. 提取所有必要參數 */
 P : float(find_val_sym("P", params))$
 L : float(find_val_sym("L", params))$
 r : float(find_val_sym("r", params))$
 S : float(find_val_sym("S", params))$
 E : float(find_val_sym("E", params))$
 
-/* 3. 計算邏輯 */
-if (P <= 0 or S <= 0 or E <= 0) then error("P, S, E must > 0")$
-
-/* 計算係數 M */
 M_val : 0.25 * (3 + sqrt(L/r))$
-
-/* 計算需求厚度 t_req (ASME Sec. VIII Div.1 Appendix 1-4) */
 t_req : (P * L * M_val) / (2*S*E - 0.2*P)$
 
-/* 4. 輸出 HTML 結果 */
 print(concat("<div id='result-t' class='results-box'>",
              "<strong>(2) 需求厚度計算結果</strong><br/>",
-             "當 P = ", string(P), " MPa, S = ", string(S), " MPa, E = ", string(E), "<br/>",
              "計算得 t_req = <strong>", string(t_req), "</strong> mm</div>"))$
 #+END_SRC
 
 #+RESULTS: calc_t
 #+begin_export html
-<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>當 P =\
- 1.6 MPa, S = 137.0 MPa, E = 0.85<br/>計算得 t_req = <strong>14.616870729325576</\
-strong> mm</div> 
+<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>計算得 t_req = <strong>14.617</strong> mm</div> 
 #+end_export
 
-* 工程判斷 (Engineering Judgment)
+* 自動化設計評估
+#+NAME: design_check
+#+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
+linel: 1000$
+fpprintprec: 5$
+
+/* 1. 強化版查表函數 */
+find_val_sym(target, tbl) := block([val: false],
+    for row in tbl do (
+        if ssubst("", " ", string(row[2])) = target then val: row[3]
+    ),
+    if val = false then error("NotFound: ", target) else val
+)$
+
+/* 2. 提取計算參數 */
+P : float(find_val_sym("P", params))$
+L : float(find_val_sym("L", params))$
+r : float(find_val_sym("r", params))$
+S : float(find_val_sym("S", params))$
+E : float(find_val_sym("E", params))$
+tn : float(find_val_sym("tn", params))$
+CA : float(find_val_sym("CA", params))$
+
+/* 3. 計算需求厚度 t_req */
+M_val : 0.25 * (3 + sqrt(L/r))$
+t_req : (P * L * M_val) / (2*S*E - 0.2*P)$
+
+/* 4. 計算有效厚度 t_available */
+/* 考慮公稱厚度扣除腐蝕裕度 */
+t_available : tn - CA$
+
+/* 5. 邏輯判定 */
+is_pass : if t_available >= t_req then true else false$
+color : if is_pass then "#4CAF50" else "#f44336"$ /* 綠色或紅色 */
+
+/* 6. 輸出 HTML */
+print(concat("<div class='results-box' style='border: 2px solid ", color, "; background: rgba(255,255,255,0.05);'>",
+             "<strong style='color:", color, "; font-size: 1.2em;'>[ ", if is_pass then "PASS 符合規範" else "FAIL 厚度不足", " ]</strong><br/><br/>",
+             "● 最小需求厚度 (t_req)：<strong>", string(t_req), "</strong> mm<br/>",
+             "● 選用有效厚度 (tn - CA)：<strong>", string(tn), " - ", string(CA), " = ", string(t_available), "</strong> mm<br/>",
+             if is_pass then 
+                "符合 ASME Sec. VIII Div.1 結構強度要求。"
+             else 
+                concat("<span style='color: #ff9800;'>⚠️ 提示：選用厚度不足！建議將公稱厚度 tn 增加至至少 <strong>", string(ceiling(t_req + CA)), "</strong> mm。</span>"),
+             "</div>"))$
+#+END_SRC
+
+#+RESULTS: design_check
+#+begin_export html
+<div class='results-box' style='border: 2px solid #f44336; background: rgba(255,255,255,0.05);'><strong style='color:#f44336; font-size: 1.2em;'>[ FAIL 厚度不足 ]</strong><br/><br/>● 最小需求厚度 (t_req)：<strong>14.617</strong> mm<br/>● 選用有效厚度 (tn - CA)：<strong>16.0 - 2.0 = 14.0</strong> mm<br/><span style='color: #ff9800;'>⚠️ 提示：選用厚度不足！建議將公稱厚度 tn 增加至至少 <strong>17</strong> mm。</span></div> 
+#+end_export
+
+* 工程判斷 (Engineering Judgment)                                  :noexport:
 #+BEGIN_QUOTE
 **設計總結：**
 1. 根據 ASME 2025 規範，計算得最小需求厚度 $t_{req} \approx 8.7 \, mm$。
@@ -123,5 +164,5 @@ strong> mm</div>
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 18:02:33 2026</div>
+<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 18:30:43 2026</div>
 #+end_export
