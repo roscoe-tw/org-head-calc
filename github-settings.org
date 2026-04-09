@@ -33,6 +33,10 @@
     group: "pages"
     cancel-in-progress: false
 
+  env:
+    # 強制全域使用 Node 24
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
   jobs:
     build:
       runs-on: ubuntu-latest
