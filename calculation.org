@@ -1,143 +1,155 @@
 #+TITLE: 碟形端板厚度計算 (ASME Sec. VIII Div.1)
 #+AUTHOR: Each Application Mechanical Design Studio (各申機械設計工作室)
-#+DATE: 2026-04-09
+#+DATE: 2026-04-10
 
 #+OPTIONS: toc:nil num:nil tex:mathjax
 #+REVEAL_THEME: league
 #+REVEAL_TRANS: slide
-#+REVEAL_INIT_OPTIONS: width:1280, height:720, transition:'slide', controls:true, progress:true, margin:0.05, minScale:0.5, maxScale:3
-#+REVEAL_HEAD_PREAMBLE: <style> .reveal section{font-size: 24px;} @media screen and (max-width: 500px) { .reveal section{font-size: 30px;} } .reveal table{margin-left:auto; margin-right:auto;} .reveal .results-box{background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #777;} .scroll-box{ max-height: 580px; overflow-y: auto; padding: 20px !important; text-align: left; -webkit-overflow-scrolling: touch;} .flex-container { display: flex; align-items: center; gap: 30px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; } .flex-item-img { flex: 0 1 400px; } .flex-item-text { flex: 1 1 500px; background: rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; border-left: 6px solid #4db6ac; text-align: left; } .flex-item-text p { margin: 0 0 15px 0; } </style>
+#+REVEAL_INIT_OPTIONS: width:1920, height:1080, transition:'slide', controls:true, progress:true, margin:0.1
+#+REVEAL_HEAD_PREAMBLE: <style>.reveal section{font-size: 24px;} .reveal table{margin-left:auto; margin-right:auto;} .reveal .results-box{background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; border: 1px solid #777; margin-top: 10px;} .scroll-box { max-height: 500px; overflow-y: auto; text-align: left; padding: 20px; background: rgba(0,0,0,0.2); border-left: 10px solid #f44336; }</style>
 
 * 專案簡介
 本文件採用 **Docs-as-Code** 工作流，確保工程計算與技術文件的一致性。
-- *Org-mode*: 結構化內容與代碼塊管理
+- *Org-mode*: 結構化內容與計算邏輯封裝
 - *Maxima*: 符號與數值工程計算引擎
-- *Reveal.js*: CI/CD 自動化生成的 HTML5 簡報
+- *Reveal.js*: CI/CD 自動化生成的 HTML5 技術簡報
 
 * 免責宣告 (Disclaimer)
-#+REVEAL_HTML: <div class="scroll-box" style="background: rgba(244, 67, 54, 0.2); border-left: 10px solid #f44336;">
+#+REVEAL_HTML: <div class="scroll-box">
 **注意：本文件非正式法規認證文件**
-1. **僅供參考** ：本計算書僅作為初步設計評估與學術探討之用，不具備法律效力，亦不可直接作為壓力容器製造、檢驗或申報之法律依據。
-2. **無擔保聲明** ：雖然本文件力求計算邏輯符合 ASME Sec. VIII Div.1 之規範，但開發者不保證代碼執行結果之絕對準確性，亦不對因使用本文件產生的任何直接或間接損失負責。
-3. **專業審核** ：實際工程應用必須由 **具備資格之專業工程師** 進行最終審核、簽署並蓋章後方可執行。
-      * 延伸閱讀： [[https://medium.com/@choice-record/%E5%BE%9E-asme-2023-%E5%88%B0-2025-%E8%A3%BD%E9%80%A0%E5%BB%A0%E5%A6%82%E4%BD%95%E8%AD%89%E6%98%8E%E8%A8%AD%E8%A8%88%E4%BA%BA%E5%93%A1%E7%9A%84-%E9%81%A9%E4%BB%BB%E6%80%A7-5c97d10bb277][從 ASME 2023 到 2025：製造廠如何證明設計人員的「適任性」？]]
+1. **僅供參考** ：本計算書僅作為初步設計評估之用。
+2. **適任性要求** ：根據 **ASME 2025 Appendix 47**，設計人員必須經過製造廠之適任性評估。
+3. **專業審核** ：實際應用必須由具備資格之 **專業工程師 (PE)** 最終審核。
 #+REVEAL_HTML: </div>
 
 * 設計參數輸入
-修改下方表格數值後，透過 GitHub Actions 或 `publish.el` 腳本即可自動更新計算結果。
-
 #+NAME: design_params
 | 參數名稱     | 符號 | 數值 | 單位 |
 |--------------+------+------+------|
 | 設計壓力     | P    |  1.6 | MPa  |
 | 內徑         | Di   | 1200 | mm   |
 | 冠部內半徑   | L    | 1200 | mm   |
-| 轉角內半徑   | r    |   72 | mm   |
-| 材料許用應力 | S    |  138 | MPa  |
+| 轉角內半徑   | r    | 72   | mm   |
+| 材料許用應力 | S    | 138  | MPa  |
 | 焊道效率     | E    | 0.85 | N/A  |
 | 公稱厚度     | tn   | 16.0 | mm   |
-| 腐蝕裕度     | CA   |  2.0 | mm   |
+| 腐蝕裕度     | CA   | 2.0  | mm   |
 
-* 碟形端板厚度計算
-** 幾何係數 M 的計算公式
-#+REVEAL_HTML: <div class="scroll-box">
-#+REVEAL_HTML: <div class="flex-container">
+* 幾何係數 M 的計算
+** 公式與幾何關係
+#+REVEAL_HTML: <div style="display: flex; align-items: center; justify-content: center; gap: 40px;">
+#+REVEAL_HTML: <div style="flex: 1; text-align: left;">
+根據 ASME BPVC Section VIII, Division 1, Mandatory Appendix 1-4，幾何係數 $M$ 的計算公式如下：
 
-#+REVEAL_HTML: <div class="flex-item-img">
-#+ATTR_HTML: :width 400px :alt "Torispherica drawing"
-[[file+emacs:assets/images/Torispherical-drawing-1.png]]
-#+REVEAL_HTML: </div>
-
-#+REVEAL_HTML: <div class="flex-item-text">
-根據 ASME BPVC Section VIII, Division 1, Mandatory Appendix 1-4，
-對於碟形封頭 (Torispherical Head)，其幾何係數 $M$ 的計算公式如下：
-
-\[ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right) \]
+$$ M = \frac{1}{4} \left( 3 + \sqrt{\frac{L}{r}} \right) $$
 
 其中：
-- *L* : 封頭內部的球面半徑 (Inside Dish Radius)
-- *r* : 封頭邊緣的轉角半徑 (Inside Knuckle Radius)
+- *L* ：封頭內部的球面半徑 (Inside Dish Radius)
+- *r* ：封頭邊緣的轉角半徑 (Inside Knuckle Radius)
+#+REVEAL_HTML: </div>
+#+REVEAL_HTML: <div style="flex: 1;">
+#+ATTR_HTML: :width 450px :alt "Torispherical-drawing"
+[[file:assets/images/Torispherical-drawing-1.png]]
+#+REVEAL_HTML: </div>
 #+REVEAL_HTML: </div>
 
-#+REVEAL_HTML: </div>
-
+** 計算結果與代入
 #+NAME: calc_m
-#+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-  linel: 1000$ fpprintprec: 5$
-  find_val_sym(target, tbl) := block([val: false], for row in tbl do (if ssubst("", " ", string(row[2])) = target then val: row[3]), if val = false then error("NotFound: ", target) else val)$
-  L_val : float(find_val_sym("L", params))$
-  r_val : float(find_val_sym("r", params))$
-  M_val : 0.25 * (3 + sqrt(L_val/r_val))$
-  print(concat("<div class='results-box'>",
-      "<strong>(1) 係數 M 計算結果</strong><br/>",
-      "當 L = ", string(L_val), ", r = ", string(r_val), "<br/>",
-      "M = <strong>", string(M_val), "</strong></div>"))$
+#+BEGIN_SRC maxima :var params=design_params :exports results :results output html :eval yes
+  load("stringproc")$
+  linel: 1000$
+  find_val(target, tbl) := block([val: false], 
+    for row in tbl do (if ssubst("", " ", string(row[2])) = target then val: row[3]), 
+    val
+  )$
+  L_v : float(find_val("L", params))$
+  r_v : float(find_val("r", params))$
+  M_v : 0.25 * (3 + sqrt(L_v/r_v))$
+
+  printf(true, "<div class=\"results-box\">")$
+  printf(true, "<div style=\"font-family: monospace; opacity: 0.8; margin-bottom: 10px;\">")$
+  printf(true, "M = 0.25 * (3 + sqrt(~,1f / ~,1f))<br/>", L_v, r_v)$
+  printf(true, "</div>")$
+  printf(true, "當 L = ~,1f mm, r = ~,1f mm<br/>", L_v, r_v)$
+  printf(true, "應力集中係數 <strong>M = ~,4f</strong></div>", M_v)$
 #+END_SRC
 
 #+RESULTS: calc_m
 #+begin_export html
-<div class='results-box'><strong>(1) 係數 M 計算結果</strong><br/>當 L = 1200.0, r = 72.0<br/>M = <strong>1.7706</strong></div> 
+<div class="results-box"><div style="font-family: monospace; opacity: 0.8; margin-bottom: 10px;">M = 0.25 * (3 + sqrt(1200.0 / 72.0))<br/></div>當 L = 1200.0 mm, r = 72.0 mm<br/>應力集中係數 <strong>M = 1.7706</strong></div>
 #+end_export
 
-#+REVEAL_HTML: </div>
+* 需求厚度與強度評估
+** 強度計算公式
+根據 ASME 規範，最小需求厚度 $t$ 計算如下：
 
-** 最小需求厚度 (t)
-#+REVEAL_HTML: <div class="scroll-box">
-公式如下：
-\[ t = \frac{P \cdot L \cdot M}{2SE - 0.2P} \]
+$$ t = \frac{P \cdot L \cdot M}{2SE - 0.2P} $$
 
-#+NAME: calc_t
-#+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-  linel: 1000$ fpprintprec: 5$
-  find_val_sym(target, tbl) := block([val: false], for row in tbl do (if ssubst("", " ", string(row[2])) = target then val: row[3]), if val = false then error("NotFound: ", target) else val)$
-  P : float(find_val_sym("P", params))$ L : float(find_val_sym("L", params))$ r : float(find_val_sym("r", params))$ S : float(find_val_sym("S", params))$ E : float(find_val_sym("E", params))$
-  M_val : 0.25 * (3 + sqrt(L/r))$
-  t_req : (P * L * M_val) / (2*S*E - 0.2*P)$
-  print(concat("<div id='result-t' class='results-box'>",
-      "<strong>(2) 需求厚度計算結果</strong><br/>",
-      "計算得 t_req = <strong>", string(t_req), "</strong> mm</div>"))$
-#+END_SRC
-
-#+RESULTS: calc_t
-#+begin_export html
-<div id='result-t' class='results-box'><strong>(2) 需求厚度計算結果</strong><br/>計算得 t_req = <strong>14.511</strong> mm</div> 
-#+end_export
-
-#+REVEAL_HTML: </div>
-
-* 自動化設計評估
-#+REVEAL_HTML: <div class="scroll-box">
+** 強度評估結果
 #+NAME: design_check
-#+BEGIN_SRC maxima :var params=design_params :exports results :results html :eval yes
-linel: 1000$ fpprintprec: 5$
-find_val_sym(target, tbl) := block([val: false], for row in tbl do (if ssubst("", " ", string(row[2])) = target then val: row[3]), if val = false then error("NotFound: ", target) else val)$
-P:float(find_val_sym("P",params))$ L:float(find_val_sym("L",params))$ r:float(find_val_sym("r",params))$ S:float(find_val_sym("S",params))$ E:float(find_val_sym("E",params))$ tn:float(find_val_sym("tn",params))$ CA:float(find_val_sym("CA",params))$
-M_val: 0.25 * (3 + sqrt(L/r))$ t_req: (P*L*M_val)/(2*S*E-0.2*P)$ t_available: tn-CA$
-is_pass: if t_available >= t_req then true else false$ color: if is_pass then "#4CAF50" else "#f44336"$
-print(concat("<div class='results-box' style='border: 2px solid ", color, "; background: rgba(255,255,255,0.05);'>",
-             "<strong style='color:", color, "; font-size: 1.2em;'>[ ", if is_pass then "PASS 符合規範" else "FAIL 厚度不足", " ]</strong><br/><br/>",
-             "● 最小需求厚度 (t_req)：<strong>", string(t_req), "</strong> mm<br/>",
-             "● 選用有效厚度 (tn - CA)：<strong>", string(tn), " - ", string(CA), " = ", string(t_available), "</strong> mm<br/>",
-             if is_pass then "符合 ASME Sec. VIII Div.1 結構強度要求。" else concat("<span style='color: #ff9800;'>⚠️ 提示：選用厚度不足！建議 tn 至少為 <strong>", string(ceiling(t_req + CA)), "</strong> mm。</span>"), "</div>"))$
+#+BEGIN_SRC maxima :var params=design_params :exports results :results output html :eval yes
+linel: 1000$
+load("stringproc")$
+find_val(target, tbl) := block([val: false], for row in tbl do (if ssubst("", " ", string(row[2])) = target then val: row[3]), val)$
+
+P : float(find_val("P", params))$
+L : float(find_val("L", params))$
+r : float(find_val("r", params))$
+S : float(find_val("S", params))$
+E : float(find_val("E", params))$
+tn : float(find_val("tn", params))$
+CA : float(find_val("CA", params))$
+
+M_v : 0.25 * (3 + sqrt(L/r))$
+t_req : (P * L * M_v) / (2*S*E - 0.2*P)$
+t_available : tn - CA$
+
+t_min_threshold : t_req + CA$
+spec_plates : [6, 8, 10, 12, 14, 16, 18, 20, 22, 25, 28, 30, 32, 36, 38, 40]$
+recommended_val : 0$
+for p in spec_plates do (if p >= t_min_threshold then (recommended_val : p, return(p)))$
+
+is_pass : if t_available >= t_req then true else false$
+color : if is_pass then "#4CAF50" else "#f44336"$
+
+printf(true, "<div class=\"results-box\" style=\"border: 2px solid ~a;\">", color)$
+printf(true, "<strong style=\"color:~a; font-size: 1.2em;\">[ ~a ]</strong><br/><br/>", 
+       color, if is_pass then "PASS 符合規範" else "FAIL 厚度不足")$
+
+printf(true, "<div style=\"font-family: monospace; background: rgba(0,0,0,0.3); padding: 15px; margin-bottom: 15px; border-radius: 5px;\">")$
+printf(true, "代入計算過程：<br/>")$
+printf(true, "t = (~,1f * ~,1f * ~,4f) / (2 * ~,1f * ~,2f - 0.2 * ~,1f)<br/>", P, L, M_v, S, E, P)$
+printf(true, "t_req = <strong>~,3f</strong> mm", t_req)$
+printf(true, "</div>")$
+
+printf(true, "● 最小需求厚度 (t_req)：<strong>~,3f</strong> mm<br/>", t_req)$
+printf(true, "● 建議選用公稱厚度 (t_req + CA)：<span style=\"color: #ff9800;\"><strong>~a mm</strong></span><br/>", 
+       if recommended_val > 0 then string(recommended_val) else "超過常用規格")$
+printf(true, "<hr style=\"border:0; border-top:1px solid #444;\">")$
+printf(true, "● 現有選用有效厚度 (tn - CA)：<strong>~,1f - ~,1f = ~,1f</strong> mm<br/>", tn, CA, t_available)$
+
+if is_pass then 
+   printf(true, "強度評估：<strong>~,1f >= ~,3f</strong> (OK!)", t_available, t_req)
+else 
+   printf(true, "⚠️ 警告：厚度不足！選用厚度 ~,1f < 需求厚度 ~,3f", t_available, t_req)$
+printf(true, "</div>")$
 #+END_SRC
 
 #+RESULTS: design_check
 #+begin_export html
-<div class='results-box' style='border: 2px solid #f44336; background: rgba(255,255,255,0.05);'><strong style='color:#f44336; font-size: 1.2em;'>[ FAIL 厚度不足 ]</strong><br/><br/>● 最小需求厚度 (t_req)：<strong>14.511</strong> mm<br/>● 選用有效厚度 (tn - CA)：<strong>16.0 - 2.0 = 14.0</strong> mm<br/><span style='color: #ff9800;'>⚠️ 提示：選用厚度不足！建議 tn 至少為 <strong>17</strong> mm。</span></div> 
+<div class="results-box" style="border: 2px solid #f44336;"><strong style="color:#f44336; font-size: 1.2em;">[ FAIL 厚度不足 ]</strong><br/><br/><div style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 15px; margin-bottom: 15px; border-radius: 5px;">代入計算過程：<br/>t = (1.6 * 1200.0 * 1.7706) / (2 * 138.0 * 0.85 - 0.2 * 1.6)<br/>t_req = <strong>14.511</strong> mm</div>● 最小需求厚度 (t_req)：<strong>14.511</strong> mm<br/>● 建議選用公稱厚度 (t_req + CA)：<span style="color: #ff9800;"><strong>18 mm</strong></span><br/><hr style="border:0; border-top:1px solid #444;">● 現有選用有效厚度 (tn - CA)：<strong>16.0 - 2.0 = 14.0</strong> mm<br/>⚠️ 警告：厚度不足！選用厚度 14.0 < 需求厚度 14.511</div>
 #+end_export
 
-#+REVEAL_HTML: </div>
-
-* 結論
-- 本計算過程經由自動化腳本執行，排除人為謄寫錯誤。
-- 完整紀錄符合壓力容器設計標準流程（Engineering Judgment Based）。
+* 結論與工程判斷
+- **自動化校核**：透過 Maxima 引擎排除人為錯誤。
+- **Docs-as-Code**：本文件原始碼受版本控制，確保工程師在不同版本法規間的判斷邏輯得以保存。
 
 * 最後編譯時間
 #+BEGIN_SRC emacs-lisp :exports results :results html
-  (concat "<div style='font-size:0.8em; color:gray;'>最後編譯時間：" (current-time-string) "</div>")
+  (format "<div style='font-size:0.8em; color:gray;'>技術審核時間：%s (UTC+8)</div>" (current-time-string))
 #+END_SRC
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>最後編譯時間：Thu Apr  9 23:54:52 2026</div>
+<div style='font-size:0.8em; color:gray;'>技術審核時間：Fri Apr 10 01:14:52 2026 (UTC+8)</div>
 #+end_export
