@@ -26,6 +26,9 @@
 #+REVEAL_HTML: </div>
 
 * 設計參數輸入
+#+ATTR_HTML: :width 450px :alt "Torispherical-drawing"
+[[file:assets/images/Torispherical-drawing-1.png]]
+
 #+NAME: design_params
 | 參數名稱     | 符號 | 數值 | 單位 |
 |--------------+------+------+------|
@@ -162,5 +165,5 @@ printf(true, "</div>")$
 
 #+RESULTS:
 #+begin_export html
-<div style='font-size:0.8em; color:gray;'>技術審核時間：Fri Apr 10 01:22:38 2026 (UTC+8)</div>
+<div style='font-size:0.8em; color:gray;'>技術審核時間：Fri Apr 10 08:51:38 2026 (UTC+8)</div>
 #+end_export
